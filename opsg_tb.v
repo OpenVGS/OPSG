@@ -1,5 +1,26 @@
-// Code your testbench here
-// or browse Examples
+/*******************************************************************//**
+ *  \file opsg.v
+ *  \author René Richard
+ *  \brief This program contains specific functions for the genesis cartridge
+ *
+ *  \copyright This file is part of OPSG.
+ *
+ *   OPSG is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   OPSG is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with OPSG.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+//`include "opsg.v"
+
 module test;
   
   reg clk, n_rst, n_wr;

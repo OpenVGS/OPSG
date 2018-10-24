@@ -52,10 +52,6 @@ module opsg #(
 	reg [2:0] ctrl4 = 3'b100;
 	reg [2:0] prev_reg = 3'b000;
 	reg noise_reload = 0;
-
-	// audio summing
-	reg [15:0] aleft;
-	reg [15:0] aright;
   
 	// each bit of attenuation corresponds to 2dB
 	// 2dB = 10^(-0.1) = 0.79432823
@@ -101,13 +97,13 @@ module opsg #(
 		end
 	endfunction
   
-	//divide the master clock by 32
+	//divide the master clock by 32, testbenches can reduce this value to shrink the waveform size
 	always @(posedge clk) begin
 		clk_div <= clk_div + 1;
 	end
-	// 
 	assign clk32 = clk_div[CLK_DIV];
   
+	// TODO add left/right control bits for Gamegear mode
 	// assign weighted audio outputs to channels
 	assign audio_left = (ch1 ? vol_table(vol1) : 0) + (ch2 ? vol_table(vol2) : 0) + (ch3 ? vol_table(vol3) : 0) + (ch4 ? vol_table(vol4) : 0)   ;
 	assign audio_right = audio_left;

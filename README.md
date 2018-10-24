@@ -18,6 +18,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with OPSG.  If not, see <http://www.gnu.org/licenses/>.
 
+# Discord
+Join the development talk on our discord server at https://t.co/b1SaVcVk48.
+
 # Simulation
 Run the test benches with iverilog using the following commands:
 ```

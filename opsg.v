@@ -59,26 +59,41 @@ module opsg #(
   
 	// each bit of attenuation corresponds to 2dB
 	// 2dB = 10^(-0.1) = 0.79432823
-	function [15:0] vol_table;
+	`define _OPSG_VOL1  (MAX_VOLUME * 0.79432823)
+	`define _OPSG_VOL2  (MAX_VOLUME * 0.63095734)
+	`define _OPSG_VOL3  (MAX_VOLUME * 0.50118723)
+	`define _OPSG_VOL4  (MAX_VOLUME * 0.39810717)
+	`define _OPSG_VOL5  (MAX_VOLUME * 0.31622777)
+	`define _OPSG_VOL6  (MAX_VOLUME * 0.25118864)
+	`define _OPSG_VOL7  (MAX_VOLUME * 0.19952623)
+	`define _OPSG_VOL8  (MAX_VOLUME * 0.15848932)
+	`define _OPSG_VOL9  (MAX_VOLUME * 0.12589254)
+	`define _OPSG_VOL10 (MAX_VOLUME * 0.10000000)
+	`define _OPSG_VOL11 (MAX_VOLUME * 0.07943282)
+	`define _OPSG_VOL12 (MAX_VOLUME * 0.06309573)
+	`define _OPSG_VOL13 (MAX_VOLUME * 0.05011872)
+	`define _OPSG_VOL14 (MAX_VOLUME * 0.03981072)
+	
+	 function [15:0] vol_table;
 		input [3:0] vol;
 		reg [15:0] vol_temp;
 		begin
 			case(vol)
 				0  : vol_temp = MAX_VOLUME;
-				1  : vol_temp = MAX_VOLUME * 0.79432823;
-				2  : vol_temp = MAX_VOLUME * 0.63095734;
-				3  : vol_temp = MAX_VOLUME * 0.50118723;
-				4  : vol_temp = MAX_VOLUME * 0.39810717;
-				5  : vol_temp = MAX_VOLUME * 0.31622777;
-				6  : vol_temp = MAX_VOLUME * 0.25118864;
-				7  : vol_temp = MAX_VOLUME * 0.19952623;
-				8  : vol_temp = MAX_VOLUME * 0.15848932;
-				9  : vol_temp = MAX_VOLUME * 0.12589254;
-				10 : vol_temp = MAX_VOLUME * 0.10000000;
-				11 : vol_temp = MAX_VOLUME * 0.07943282;
-				12 : vol_temp = MAX_VOLUME * 0.06309573;
-				13 : vol_temp = MAX_VOLUME * 0.05011872;
-				14 : vol_temp = MAX_VOLUME * 0.03981072;
+				1  : vol_temp = `_OPSG_VOL1;
+				2  : vol_temp = `_OPSG_VOL2;
+				3  : vol_temp = `_OPSG_VOL3;
+				4  : vol_temp = `_OPSG_VOL4;
+				5  : vol_temp = `_OPSG_VOL5;
+				6  : vol_temp = `_OPSG_VOL6;
+				7  : vol_temp = `_OPSG_VOL7;
+				8  : vol_temp = `_OPSG_VOL8;
+				9  : vol_temp = `_OPSG_VOL9;
+				10 : vol_temp = `_OPSG_VOL10;
+				11 : vol_temp = `_OPSG_VOL11;
+				12 : vol_temp = `_OPSG_VOL12;
+				13 : vol_temp = `_OPSG_VOL13;
+				14 : vol_temp = `_OPSG_VOL14;
 				default : vol_temp = 0;
 			endcase
 		  //$display("att: %d vol: %d",vol,vol_temp);

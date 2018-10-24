@@ -27,6 +27,10 @@ Then, use vvp to convert the 'test.out' file into a format .bcd which gtkwave ca
 ```
 vvp wave.out
 ```
+You could obviously run the above in one line if you're fancy:
+```
+iverilog [testbench.v] [design.v] -o wave.out & vvp wave.out
+```
 Finally, open the waveform using gtkwave:
 ```
 gtkwave dump.bcd

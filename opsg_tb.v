@@ -76,11 +76,17 @@ module test;
 		
 		// test ch1, other volumes to 0
 		#100 write_psg(8'b10010000);
-		#100 write_psg(8'b10111111);
-		#100 write_psg(8'b11011111);
-		#100 write_psg(8'b11111111);
+		write_psg(8'b10111111);
+		write_psg(8'b11011111);
+		write_psg(8'b11111111);
 		
+		// volume value 10 should be 0.1 of original volume
 		#1000
+		write_psg(8'b10011010);
+		write_psg(8'b10111010);
+		write_psg(8'b11011010);
+		write_psg(8'b11111010);
+		#10000
 		
 		// set volumes to all levels
 		#100 write_psg(8'b10010000);

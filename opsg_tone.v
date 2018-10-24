@@ -20,35 +20,30 @@
  */
  
 module opsg_tone #(
-  parameter TONE_WIDTH = 10
+	parameter TONE_WIDTH = 10
 )(
-  input clk,
-  input [TONE_WIDTH-1:0] freq,
-  output reg [TONE_WIDTH-1:0] count,
-  output reg toneBit
+	input clk,
+	input [TONE_WIDTH-1:0] freq,
+	output reg [TONE_WIDTH-1:0] count,
+	output reg toneBit
 );
 
-  // init counter to 1, tbit to 1;
-  reg [TONE_WIDTH-1:0] counter = 1;
-  reg tbit = 1'b1;
-  
-  always @(posedge clk) begin
- 
-    counter <= counter - 1;
-    
-    if ( counter == 0 ) begin
-      // output of tone channel forced to 1 if freq == 0 (used for sample playback)
-      if ( freq == 0 ) begin
-      	tbit <= 1'b1;
-      end else begin
- 		tbit <= !tbit;      
-      end
-      counter <= freq;
-    end
-    
-    count = counter;
-    toneBit = tbit;
-    
-  end
-  
+	// init counter to 1, tbit to 1;
+	reg [TONE_WIDTH-1:0] counter = 1;
+	reg tbit = 1'b1;
+
+	always @(posedge clk) begin
+		counter <= counter - 1;
+		if ( counter == 0 ) begin
+			// output of tone channel forced to 1 if freq == 0 (used for sample playback)
+			if ( freq == 0 ) begin
+				tbit <= 1'b1;
+			end else begin
+				tbit <= !tbit;      
+			end
+			counter <= freq;
+		end
+		count = counter;
+		toneBit = tbit;
+	end
 endmodule

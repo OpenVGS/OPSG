@@ -1,5 +1,5 @@
-/*******************************************************************//**
- *  \file opsg.v
+/******************************************************************************/
+/*  \file opsg.v
  *  \author René Richard
  *  \brief This program contains specific functions for the genesis cartridge
  *
@@ -19,6 +19,29 @@
  *   along with OPSG.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* Notes:
+ *
+ * - Frequency calibration:
+ *   In the TI99/4 documentation a register value of 0xfe corresponds to a note
+ *   of 440 Hz, which would result in a sound clock of 440*254 = 111760 Hz.
+ *   On a TI99/4 the sounds may be pitched higher if the chip is clocked from
+ *   the video processor, which provides a 10.738635 / 3 = 3.579545 Mhz clock
+ *   to the sound chip. After prescaling this gives a 111861 Hz sound clock.
+ *
+ * - Noise LSFR:
+ *   - For the SMS (1 and 2), Genesis and Game Gear, bits 0 and 3 are fed back
+ *     into bit 15. (*1)
+ *   - For the SG-1000, OMV, SC-3000H, BBC Micro and Colecovision, bits 0 and 1
+ *     are fed back into bit 14. (*1)
+ *   - For the Tandy 1000, bits 0 and 4 are fed back into bit 14. (*1)
+ *   - Looking at the HDL implementations floating on the net most seem to
+ *     indicate that chips based om Texas Instruments TMS9919, SN76494(A),
+ *     SN76496(A) and SN76489AN, have a 16 bit shift register, and bits 0 and 1
+ *     are fed back into bit 15.
+ *
+ *  Sources:
+ *  1) https://www.smspower.org/Development/SN76489
+ */
 `include "opsg_tone.v"
 `include "opsg_noise.v"
 
@@ -26,21 +49,16 @@ module opsg #(
 	parameter TAPPED_BIT0 = 0,
 	parameter TAPPED_BIT1 = 3,
 	parameter SHIFT_WIDTH = 15,
-	parameter TONE_WIDTH = 10,
-	parameter MAX_VOLUME = 4096,
-	parameter CLK_DIV = 4
+	parameter TONE_WIDTH  = 10,
+	parameter MAX_VOLUME  = 4095
 )(
 	input clk, n_rst, n_wr,
 	input [7:0] data,
+    input clk_sound,
 	output ch1, ch2, ch3, ch4,
 	output [15:0] audio_left,
 	output [15:0] audio_right
 );
-
-	//clock divider
-	reg [4:0] clk_div = 0;
-	wire clk32;
-
 	//tone, vol, ctrl registers
 	reg [TONE_WIDTH-1:0] freq1 = 1;
 	reg [TONE_WIDTH-1:0] freq2 = 1;
@@ -52,89 +70,68 @@ module opsg #(
 	reg [2:0] ctrl4 = 3'b100;
 	reg [2:0] prev_reg = 3'b000;
 	reg noise_reload = 0;
-  
-	// each bit of attenuation corresponds to 2dB
-	// 2dB = 10^(-0.1) = 0.79432823
-	`define _OPSG_VOL1  (MAX_VOLUME * 0.79432823)
-	`define _OPSG_VOL2  (MAX_VOLUME * 0.63095734)
-	`define _OPSG_VOL3  (MAX_VOLUME * 0.50118723)
-	`define _OPSG_VOL4  (MAX_VOLUME * 0.39810717)
-	`define _OPSG_VOL5  (MAX_VOLUME * 0.31622777)
-	`define _OPSG_VOL6  (MAX_VOLUME * 0.25118864)
-	`define _OPSG_VOL7  (MAX_VOLUME * 0.19952623)
-	`define _OPSG_VOL8  (MAX_VOLUME * 0.15848932)
-	`define _OPSG_VOL9  (MAX_VOLUME * 0.12589254)
-	`define _OPSG_VOL10 (MAX_VOLUME * 0.10000000)
-	`define _OPSG_VOL11 (MAX_VOLUME * 0.07943282)
-	`define _OPSG_VOL12 (MAX_VOLUME * 0.06309573)
-	`define _OPSG_VOL13 (MAX_VOLUME * 0.05011872)
-	`define _OPSG_VOL14 (MAX_VOLUME * 0.03981072)
-	
-	 function [15:0] vol_table;
+
+	function [$clog2(MAX_VOLUME)-1:0] vol_table;
 		input [3:0] vol;
-		reg [15:0] vol_temp;
+		reg [$clog2(MAX_VOLUME)-1:0] vol_temp;
 		begin
 			case(vol)
+				// each bit of attenuation corresponds to 2dB
+				// 2dB = 10^(-0.1) = 0.79432823
 				0  : vol_temp = MAX_VOLUME;
-				1  : vol_temp = `_OPSG_VOL1;
-				2  : vol_temp = `_OPSG_VOL2;
-				3  : vol_temp = `_OPSG_VOL3;
-				4  : vol_temp = `_OPSG_VOL4;
-				5  : vol_temp = `_OPSG_VOL5;
-				6  : vol_temp = `_OPSG_VOL6;
-				7  : vol_temp = `_OPSG_VOL7;
-				8  : vol_temp = `_OPSG_VOL8;
-				9  : vol_temp = `_OPSG_VOL9;
-				10 : vol_temp = `_OPSG_VOL10;
-				11 : vol_temp = `_OPSG_VOL11;
-				12 : vol_temp = `_OPSG_VOL12;
-				13 : vol_temp = `_OPSG_VOL13;
-				14 : vol_temp = `_OPSG_VOL14;
+				1  : vol_temp = MAX_VOLUME * 10**-0.1;
+				2  : vol_temp = MAX_VOLUME * 10**-0.2;
+				3  : vol_temp = MAX_VOLUME * 10**-0.3;
+				4  : vol_temp = MAX_VOLUME * 10**-0.4;
+				5  : vol_temp = MAX_VOLUME * 10**-0.5;
+				6  : vol_temp = MAX_VOLUME * 10**-0.6;
+				7  : vol_temp = MAX_VOLUME * 10**-0.7;
+				8  : vol_temp = MAX_VOLUME * 10**-0.8;
+				9  : vol_temp = MAX_VOLUME * 10**-0.9;
+				10 : vol_temp = MAX_VOLUME * 10**-1.0;
+				11 : vol_temp = MAX_VOLUME * 10**-1.1;
+				12 : vol_temp = MAX_VOLUME * 10**-1.2;
+				13 : vol_temp = MAX_VOLUME * 10**-1.3;
+				14 : vol_temp = MAX_VOLUME * 10**-1.4;
 				default : vol_temp = 0;
 			endcase
-		  //$display("att: %d vol: %d",vol,vol_temp);
-		  vol_table = vol_temp;
+			//$display("att: %d vol: %d",vol,vol_temp);
+			vol_table = vol_temp;
 		end
 	endfunction
-  
-	//divide the master clock by 32, testbenches can reduce this value to shrink the waveform size
-	always @(posedge clk) begin
-		clk_div <= clk_div + 1;
-	end
-	assign clk32 = clk_div[CLK_DIV];
-  
+
 	// TODO add left/right control bits for Gamegear mode
 	// assign weighted audio outputs to channels
 	assign audio_left = (ch1 ? vol_table(vol1) : 0) + (ch2 ? vol_table(vol2) : 0) + (ch3 ? vol_table(vol3) : 0) + (ch4 ? vol_table(vol4) : 0)   ;
 	assign audio_right = audio_left;
-  
+
 	// CHANNEL 1
 	opsg_tone #(
 		.TONE_WIDTH(TONE_WIDTH)
 	) psg_ch1(
-		.clk(clk32),
+		.clk(clk_sound),
 		.freq(freq1),
 		.toneBit(ch1)
 	);
-  
+
 	// CHANNEL 2
 	opsg_tone #(
 		.TONE_WIDTH(TONE_WIDTH)
 	) psg_ch2 (
-		.clk(clk32),
+		.clk(clk_sound),
 		.freq(freq2),
 		.toneBit(ch2)
 	);
-  
+
 	// CHANNEL 3
 	opsg_tone #(
 		.TONE_WIDTH(TONE_WIDTH)
 	) psg_ch3 (
-		.clk(clk32),
+		.clk(clk_sound),
 		.freq(freq3),
 		.toneBit(ch3)
 	);
-  
+
 	// NOISE CHANNEL
 	opsg_noise #(
 		.TAPPED_BIT0(0),
@@ -142,15 +139,15 @@ module opsg #(
 		.SHIFT_WIDTH(15),
 		.TONE_WIDTH(TONE_WIDTH)
 	) psg_noise (
-		.clk(clk32),
+		.clk(clk_sound),
 		.reload(noise_reload),
 		.fb(ctrl4[2]),
 		.nf(ctrl4[1:0]),
 		.freq(freq3),
 		.noiseBit(ch4)
 	);
-  
-  //data input
+
+	//data input
 	always @(posedge clk, negedge n_rst) begin
 		if (!n_rst) begin
 			vol1 = 4'b1111;
@@ -194,5 +191,5 @@ module opsg #(
 			end
 		end
 	end
-  
+
 endmodule
